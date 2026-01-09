@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: reviewpanel-postgres
+    environment:
+      POSTGRES_USER: reviewpanel
+      POSTGRES_PASSWORD: reviewpanel
+      POSTGRES_DB: reviewpanel
+    ports:
+      - "5432:5432"
+    volumes:
+      - reviewpanel_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reviewpanel -d reviewpanel"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: reviewpanel-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - reviewpanel_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  reviewpanel_pgdata:
+  reviewpanel_redisdata:

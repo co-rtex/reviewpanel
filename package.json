@@ -13,7 +13,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@prisma/client": "6",
     "dotenv-cli": "^11.0.0",
+    "prisma": "6",
     "tsx": "^4.21.0",
     "turbo": "^2.7.3",
     "typescript": "^5.9.3"

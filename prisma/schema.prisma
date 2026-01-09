@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RunStatus {
+  QUEUED
+  FETCHING
+  REVIEWING
+  CONSOLIDATING
+  POSTING
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+model Installation {
+  id           String   @id // GitHub installation id (string)
+  accountLogin String?
+  accountType  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  repos Repo[]
+  runs  Run[]
+
+  @@index([accountLogin])
+}
+
+model Repo {
+  id             String   @id // GitHub repository id (string)
+  owner          String
+  name           String
+  fullName       String   @unique
+  installationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  installation Installation @relation(fields: [installationId], references: [id])
+  prs          PullRequest[]
+  runs         Run[]
+
+  @@index([installationId])
+  @@index([owner, name])
+}
+
+model PullRequest {
+  id          String   @id // GitHub pull request id (string)
+  repoId      String
+  number      Int
+  headSha     String
+  baseSha     String
+  title       String
+  body        String?
+  authorLogin String?
+  url         String
+  state       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  repo Repo @relation(fields: [repoId], references: [id])
+  runs Run[]
+
+  @@unique([repoId, number])
+  @@index([headSha])
+}
+
+model Run {
+  id             String    @id @default(cuid())
+  repoId         String
+  prId           String
+  installationId String
+  triggerEvent   String
+  headSha        String
+  status         RunStatus @default(QUEUED)
+
+  queuedCommentId String?
+  errorCode       String?
+  errorMessage    String?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // bounded context snapshot (we’ll store JSON later)
+  contextHash    String?
+  contextPackage Json?
+
+  repo         Repo         @relation(fields: [repoId], references: [id])
+  pr           PullRequest  @relation(fields: [prId], references: [id])
+  installation Installation @relation(fields: [installationId], references: [id])
+
+  @@index([repoId, prId, createdAt])
+  @@index([status, createdAt])
+  @@index([headSha])
+}
